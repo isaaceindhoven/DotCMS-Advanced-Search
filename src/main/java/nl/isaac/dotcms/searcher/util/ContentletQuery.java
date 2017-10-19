@@ -12,10 +12,11 @@ import com.dotmarketing.portlets.contentlet.model.Contentlet;
 import com.dotmarketing.portlets.languagesmanager.model.Language;
 import com.dotmarketing.portlets.structure.model.Structure;
 import com.dotmarketing.util.Logger;
+import com.liferay.portal.model.User;
 
 /**
  * Provides functionality to build a Lucene query
- * 
+ *
  * @author xander
  * @author jorith.vandenheuvel
  *
@@ -23,13 +24,14 @@ import com.dotmarketing.util.Logger;
 public class ContentletQuery {
 	protected StringBuilder query = new StringBuilder();
 	private String structureName;
-	
+	private User user;
+
 	// Paging & sorting
 	private int offset = 0;
 	private int limit = -1;
 	private String sortBy = "";
 	private long totalResults = -1;
-	
+
 	public ContentletQuery(List<Structure> structures) {
 		String structureQuery = "+(";
 		for(Structure s : structures) {
@@ -38,16 +40,16 @@ public class ContentletQuery {
 		structureQuery += ") ";
 		query.append(structureQuery);
 	}
-	
+
 	public ContentletQuery(String structureName) {
 		this(true, structureName);
 	}
-	
+
 	public ContentletQuery(boolean include, String structureName) {
 		this.structureName = structureName;
 		query.append((include ? "+" : "-") + "structureName:" + structureName);
 	}
-	
+
 	protected String getStructureName() {
 		return structureName;
 	}
@@ -55,7 +57,7 @@ public class ContentletQuery {
 	public void setSortBy(String sortBy) {
 		this.sortBy = sortBy;
 	}
-	
+
 	public int getOffset() {
 		return offset;
 	}
@@ -73,7 +75,7 @@ public class ContentletQuery {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param include True if this must be included in the result, false otherwise
 	 * @param name The field name
 	 * @param value The value to search for
@@ -82,7 +84,7 @@ public class ContentletQuery {
 		query.append(" " + (include ? "+" : "-"));
 		addFieldLimitationString(name, value);
 	}
-	
+
 	private void addFieldLimitationString(String name, String value) {
 		if(value.contains("*")) {
 			query.append(structureName + "." + name + ":" + escapeValue(value) + " ");
@@ -90,9 +92,9 @@ public class ContentletQuery {
 			query.append(structureName + "." + name + ":\"" + escapeValue(value) + "\" ");
 		}
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @param include True if this must be included in the result, false otherwise
 	 * @param name The field name
 	 * @param values The values to search for
@@ -106,7 +108,7 @@ public class ContentletQuery {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param name The field name
 	 * @param from The lower bound value
 	 * @param to The upper bound value
@@ -115,18 +117,18 @@ public class ContentletQuery {
 		query.append(" +" + structureName + "." + name + ":[" + from + " TO " + to + "] ");
 	}
 
-	
+
 	private String escapeValue(String value) {
 		return value.replace(":", "\\:").replace("\"", "\\\"");
 	}
-	
+
 	public void addLatestLiveAndNotDeleted(boolean live) {
 		addLive(live);
 		addWorking(true);
 		addDeleted(false);
 	}
 
-	
+
 	/**
 	 * Limit the results of the query to certain categories
 	 * @param include True if this must be included in the result, false otherwise
@@ -139,7 +141,7 @@ public class ContentletQuery {
 		}
 		query.append(")");
 	}
-	
+
 	/**
 	 * Limit the results of the query to certain categories
 	 * @param include True if this must be included in the result, false otherwise
@@ -150,12 +152,12 @@ public class ContentletQuery {
 		for(int i=0; i<categories.length; i++) {
 			categoryVelocityVarNames[i] = categories[i].getCategoryVelocityVarName();
 		}
-		
+
 		addCategoryLimitations(include, categoryVelocityVarNames);
 	}
 
 	/**
-	 * Adds +live to the query 
+	 * Adds +live to the query
 	 * @param live
 	 */
 	public void addLive(boolean live) {
@@ -163,21 +165,21 @@ public class ContentletQuery {
 	}
 
 	/**
-	 * Adds +working to the query 
+	 * Adds +working to the query
 	 * @param working
 	 */
 	public void addWorking(boolean working) {
 		query.append(" +working:" + working);
 	}
-	
+
 	/**
-	 * Adds +deleted to the query 
+	 * Adds +deleted to the query
 	 * @param deleted
 	 */
 	public void addDeleted(boolean deleted) {
 		query.append(" +deleted:" + deleted);
 	}
-	
+
 	/**
 	 * Adds a language limit to the query
 	 * @param language
@@ -185,7 +187,7 @@ public class ContentletQuery {
 	public void addLanguage(Language language) {
 		addLanguage(language.getId());
 	}
-	
+
 	/**
 	 * Adds a language limit to the query
 	 * @param languageId
@@ -209,7 +211,7 @@ public class ContentletQuery {
 			Logger.warn(this, "Tried to add languageId Null!");
 		}
 	}
-	
+
 	/**
 	 * Adds a language limit to the query
 	 * @param languageId
@@ -217,15 +219,15 @@ public class ContentletQuery {
 	public void addLanguage(String languageId) {
 		query.append(" +languageId:" + languageId);
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @return The total number of results, only when paging is set and the query has been executed. -1 otherwise.
 	 */
 	public long getTotalResults() {
 		return this.totalResults;
 	}
-	
+
 	/**
 	 * Adds a host limit to the query
 	 * @param host
@@ -234,7 +236,7 @@ public class ContentletQuery {
 	public ContentletQuery addHost(Host host) {
 		return addHost(host.getIdentifier());
 	}
-	
+
 	/**
 	 * Adds a host limit to the query
 	 * @param hostIdentifier
@@ -244,7 +246,7 @@ public class ContentletQuery {
 		query.append(" +conhost:" + hostIdentifier);
 		return this;
 	}
-	
+
 	/**
 	 * Adds a host limit to the query (given host AND System HOST
 	 * @param hostIdentifier
@@ -252,7 +254,7 @@ public class ContentletQuery {
 	public void addHostAndIncludeSystemHost(String hostIdentifier) {
 		query.append(" +(conhost:SYSTEM_HOST conhost:" + hostIdentifier + ")");
 	}
-	
+
 	/**
 	 *
 	 * @return The resulting query
@@ -260,28 +262,36 @@ public class ContentletQuery {
 	public String getQuery() {
 		return query.toString();
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @return The resulting query as a StringBuilder object
 	 */
 	public StringBuilder getQueryStringBuilder() {
 		return query;
 	}
-	
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+
 	/**
 	 * Executes the query
 	 * @return The resulting List of Contentlets
 	 */
-	public List<Contentlet> executeSafe() {	
+	public List<Contentlet> executeSafe() {
 		try {
-			return APILocator.getContentletAPI().search(query.toString(), this.limit, this.offset, this.sortBy, APILocator.getUserAPI().getSystemUser(), false);
-			
+			if(user != null) {
+				return APILocator.getContentletAPI().search(query.toString(), this.limit, this.offset, this.sortBy, user, true);
+			} else {
+				return APILocator.getContentletAPI().search(query.toString(), this.limit, this.offset, this.sortBy, APILocator.getUserAPI().getSystemUser(), false);
+			}
+
 		} catch (DotDataException | DotSecurityException e) {
 			Logger.warn(this, "Exception while executing query", e);
 		}
-		
-		return new ArrayList<Contentlet>();
+
+		return new ArrayList<>();
 	}
 
 	/**

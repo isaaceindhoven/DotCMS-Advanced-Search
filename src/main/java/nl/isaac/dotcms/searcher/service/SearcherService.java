@@ -14,6 +14,7 @@ import java.util.Map;
 
 import com.dotmarketing.beans.Host;
 import com.dotmarketing.util.Logger;
+import com.liferay.portal.model.User;
 
 import nl.isaac.dotcms.searcher.dao.HostDAO;
 import nl.isaac.dotcms.searcher.dao.PortletDAO;
@@ -23,13 +24,15 @@ import nl.isaac.dotcms.searcher.shared.UserSearchValues;
 
 public class SearcherService {
 
-	private UserSearchValues userSearchValues;
-	private SearcherFilter searcherFilter;
+	private final UserSearchValues userSearchValues;
+	private final SearcherFilter searcherFilter;
+	private final User user;
 
-	public SearcherService(UserSearchValues userSearchValues) {
+	public SearcherService(UserSearchValues userSearchValues, User user) {
 		super();
 		this.userSearchValues = userSearchValues;
 		this.searcherFilter = new SearcherFilter(userSearchValues);
+		this.user = user;
 	}
 
 	public Collection<PortletHit> getPortletHits() {
@@ -37,7 +40,7 @@ public class SearcherService {
 
 		Logger.info(this, "Searching for: " + userSearchValues.toString());
 
-		Collection<Host> hosts = new HostDAO().getHosts(userSearchValues.getHost());
+		Collection<Host> hosts = new HostDAO().getHosts(userSearchValues.getHost(), user);
 
 		BufferedSearchResultIterator buffer = new BufferedSearchResultIterator(searcherFilter,
 				userSearchValues.getType(), userSearchValues.getLanguageId(), userSearchValues.getStatus());

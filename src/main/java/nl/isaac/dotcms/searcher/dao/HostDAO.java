@@ -15,16 +15,17 @@ import com.dotmarketing.exception.DotSecurityException;
 import com.dotmarketing.util.Logger;
 import com.liferay.portal.PortalException;
 import com.liferay.portal.SystemException;
+import com.liferay.portal.model.User;
 
 public class HostDAO {
 
-	public Collection<Host> getHosts(String host) {
+	public Collection<Host> getHosts(String host, User user) {
 		Collection<Host> hosts = new ArrayList<>();
 		try {
 			if (host.equals("all_hosts")) {
-				hosts.addAll(APILocator.getHostAPI().findAll(APILocator.getUserAPI().getSystemUser(), false));
+				hosts.addAll(APILocator.getHostAPI().findAll(user, true));
 			} else {
-				hosts.add(APILocator.getHostAPI().findByName(host, APILocator.getUserAPI().getSystemUser(), false));
+				hosts.add(APILocator.getHostAPI().findByName(host, user, true));
 			}
 		} catch (DotDataException | DotSecurityException e) {
 			Logger.warn(this, "Exception while retrieving hosts: " + host, e);
@@ -34,8 +35,8 @@ public class HostDAO {
 		return hosts;
 	}
 
-	public List<String> getAllHosts() {
-		return getHosts("all_hosts").stream().map(Host::getHostname).collect(Collectors.toCollection(ArrayList::new));
+	public List<String> getAllHosts(User user) {
+		return getHosts("all_hosts", user).stream().map(Host::getHostname).collect(Collectors.toCollection(ArrayList::new));
 	}
 
 	public Host getCurrentHost(HttpServletRequest request) {

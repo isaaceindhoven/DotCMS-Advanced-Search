@@ -16,7 +16,7 @@ public class AdvancedSearchActivator extends ExtendedGenericBundleActivator {
 		initializeServices(context);
 
 		// Add the viewtools
-		addViewTool(context, PortletViewtool.class, "portletviewtool", ViewToolScope.APPLICATION);
+		addViewTool(context, PortletViewtool.class, "portletviewtool", ViewToolScope.REQUEST);
 
 		// Register the portlet
 		addPortlets(context);

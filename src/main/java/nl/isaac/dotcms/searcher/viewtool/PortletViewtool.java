@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.velocity.tools.view.context.ViewContext;
 import org.apache.velocity.tools.view.tools.ViewTool;
 
 import com.dotcms.repackage.org.apache.commons.lang.StringEscapeUtils;
@@ -15,6 +16,7 @@ import com.dotmarketing.business.APILocator;
 import com.dotmarketing.exception.DotDataException;
 import com.dotmarketing.exception.DotSecurityException;
 import com.dotmarketing.portlets.languagesmanager.model.Language;
+import com.liferay.portal.model.User;
 
 import nl.isaac.dotcms.searcher.dao.HostDAO;
 import nl.isaac.dotcms.searcher.service.SearcherParser;
@@ -22,24 +24,27 @@ import nl.isaac.dotcms.searcher.shared.PortletHit;
 import nl.isaac.dotcms.searcher.shared.SearchMode;
 import nl.isaac.dotcms.searcher.shared.SearchResult;
 import nl.isaac.dotcms.searcher.util.Pagination;
+import nl.isaac.dotcms.searcher.util.UserUtil;
 
 public class PortletViewtool implements ViewTool {
+	private HttpServletRequest request;
 
 	@Override
-	public void init(Object initData) {
-
+	public void init(Object arg0) {
+		ViewContext context = (ViewContext) arg0;
+		this.request = context.getRequest();
 	}
 
 	public Collection<SearchResult> paginateResultsAndGetSnippets(int pageNumber, HttpServletRequest req) {
-		
+
 		// User has performed a search before
-		if (req != null 
+		if (req != null
 				&& req.getSession().getAttribute("searcher_filteredResults") != null
 				&& req.getSession().getAttribute("searcher_text") != null
 				&& req.getSession().getAttribute("searcher_mode") != null
 				&& req.getSession().getAttribute("searcher_snippetSizeBefore") != null
 				&& req.getSession().getAttribute("searcher_snippetSizeAfter") != null) {
-			
+
 			String searchString = (String) req.getSession().getAttribute("searcher_text");
 			String searchMode = (String) req.getSession().getAttribute("searcher_mode");
 			String excludeText = (String) req.getSession().getAttribute("searcher_excludeText");
@@ -48,8 +53,8 @@ public class PortletViewtool implements ViewTool {
 			int resultsPerPage = (int) req.getSession().getAttribute("searcher_resultsPerPage");
 
 			@SuppressWarnings("unchecked")
-			ArrayList<PortletHit> allHits = new ArrayList<PortletHit>((List<PortletHit>) req.getSession().getAttribute("searcher_filteredResults"));
-			
+			ArrayList<PortletHit> allHits = new ArrayList<>((List<PortletHit>) req.getSession().getAttribute("searcher_filteredResults"));
+
 			int resultSize = allHits.size();
 			int pageSize = (int) Math.ceil((double) resultSize / resultsPerPage);
 
@@ -57,22 +62,22 @@ public class PortletViewtool implements ViewTool {
 
 			int fromIndex = (pageNumber - 1) * resultsPerPage;
 			int toIndex = fromIndex + resultsPerPage;
-			
+
 			Collection<PortletHit> paginatedHits = allHits.subList(Math.max(0, fromIndex), Math.min(toIndex, resultSize));
-			
+
 			SearcherParser parser = new SearcherParser(searchString, searchMode, snippetSizeBefore, snippetSizeAfter, excludeText);
-			
+
 			// Parse hits to SearchResult and get snippets
 			Collection<SearchResult> paginatedSearchResults = parser.parse(paginatedHits);
-			
+
 			req.getSession().setAttribute("pageSize", pageSize);
 			req.setAttribute("paginatedResultsStartIndex", fromIndex + 1);
 			req.setAttribute("paginatedResultsEndIndex", Math.min(toIndex, resultSize));
-			
+
 			Pagination pagination = new Pagination(pageNumber, pageSize, allHits.size(), fromIndex + 1, Math.min(toIndex, resultSize));
-			
+
 			req.setAttribute("pagination", pagination);
-			
+
 			return paginatedSearchResults.size() > 0 ? paginatedSearchResults : null;
 		}
 
@@ -119,7 +124,8 @@ public class PortletViewtool implements ViewTool {
 	}
 
 	public List<String> getAllHosts() throws DotDataException, DotSecurityException {
-		return new HostDAO().getAllHosts();
+		User user = UserUtil.getLoggedInUser(request);
+		return new HostDAO().getAllHosts(user);
 	}
 
 }

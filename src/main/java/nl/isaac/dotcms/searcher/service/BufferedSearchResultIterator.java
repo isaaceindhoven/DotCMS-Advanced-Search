@@ -11,7 +11,6 @@ import com.dotmarketing.beans.Host;
 import com.dotmarketing.portlets.containers.model.Container;
 import com.dotmarketing.portlets.contentlet.model.Contentlet;
 import com.dotmarketing.portlets.folders.model.Folder;
-import com.dotmarketing.portlets.htmlpages.model.HTMLPage;
 import com.dotmarketing.portlets.structure.model.Structure;
 import com.dotmarketing.portlets.templates.model.Template;
 import com.dotmarketing.util.Logger;
@@ -20,7 +19,6 @@ import nl.isaac.dotcms.searcher.dao.FolderDAO;
 import nl.isaac.dotcms.searcher.dao.PortletDAO;
 import nl.isaac.dotcms.searcher.shared.Status;
 import nl.isaac.dotcms.searcher.shared.Type;
-import nl.isaac.dotcms.searcher.util.DotCMSVersionUtil;
 
 public class BufferedSearchResultIterator implements Iterator<Map<Type, Collection<? extends Object>>> {
 
@@ -150,20 +148,10 @@ public class BufferedSearchResultIterator implements Iterator<Map<Type, Collecti
 			amountFound = templates.size();
 			break;
 		case HTMLPAGE:
-			// Use the new HTML Contentlets
-			if (DotCMSVersionUtil.dotCMSVersion >= 3) {
 				Logger.info(this, "Searching HTML contentlets (dotCMS 3 or higher)");
 				List<Contentlet> htmlContentlets = portletDAO.getHtmlContentlets(host, languageId, status);
 				portlets.put(Type.HTML_CONTENTLET, htmlContentlets);
 				amountFound = htmlContentlets.size();
-			}
-			// Use the old HTML Pages
-			else {
-				Logger.info(this, "Searching HTML pages (dotCMS lower than 3) - old API");
-				Collection<HTMLPage> htmlPages = portletDAO.getAllHTMLPages(host);
-				portlets.put(Type.HTMLPAGE, htmlPages);
-				amountFound = htmlPages.size();
-			}
 			break;
 		case FOLDER:
 			Collection<Folder> folders = folderDAO.getAllFolders(host);

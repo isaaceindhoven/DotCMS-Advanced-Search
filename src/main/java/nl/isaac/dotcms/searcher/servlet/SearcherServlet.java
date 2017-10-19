@@ -19,6 +19,7 @@ import javax.servlet.http.HttpSession;
 
 import com.dotcms.repackage.org.apache.commons.lang.StringUtils;
 import com.dotmarketing.util.Logger;
+import com.liferay.portal.model.User;
 
 import nl.isaac.dotcms.searcher.dao.HostDAO;
 import nl.isaac.dotcms.searcher.service.SearcherService;
@@ -29,6 +30,7 @@ import nl.isaac.dotcms.searcher.shared.Status.StatusEnum;
 import nl.isaac.dotcms.searcher.shared.Type;
 import nl.isaac.dotcms.searcher.shared.UserSearchValues;
 import nl.isaac.dotcms.searcher.shared.Version;
+import nl.isaac.dotcms.searcher.util.UserUtil;
 import nl.isaac.dotcms.util.osgi.RequestHelper;
 
 public class SearcherServlet extends HttpServlet {
@@ -57,7 +59,8 @@ public class SearcherServlet extends HttpServlet {
 
 		UserSearchValues userSearchValues = paramsToUserSearchValues(req);
 
-		SearcherService searcherService = new SearcherService(userSearchValues);
+		User user = UserUtil.getLoggedInUser(req);
+		SearcherService searcherService = new SearcherService(userSearchValues, user);
 
 		Collection<PortletHit> searchResults = searcherService.getPortletHits();
 

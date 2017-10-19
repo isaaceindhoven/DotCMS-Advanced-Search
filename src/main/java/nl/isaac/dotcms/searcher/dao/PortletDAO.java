@@ -9,17 +9,15 @@ import java.util.stream.Collectors;
 
 import com.dotmarketing.beans.Host;
 import com.dotmarketing.business.APILocator;
-import com.dotmarketing.business.DotStateException;
 import com.dotmarketing.exception.DotDataException;
 import com.dotmarketing.exception.DotSecurityException;
 import com.dotmarketing.portlets.containers.model.Container;
 import com.dotmarketing.portlets.contentlet.model.Contentlet;
-import com.dotmarketing.portlets.folders.model.Folder;
-import com.dotmarketing.portlets.htmlpages.model.HTMLPage;
 import com.dotmarketing.portlets.structure.factories.StructureFactory;
 import com.dotmarketing.portlets.structure.model.Structure;
 import com.dotmarketing.portlets.templates.model.Template;
 import com.dotmarketing.util.Logger;
+import com.liferay.portal.model.User;
 
 import nl.isaac.dotcms.searcher.service.BufferedSearchResultIterator;
 import nl.isaac.dotcms.searcher.shared.Status;
@@ -29,11 +27,13 @@ import nl.isaac.dotcms.searcher.util.ContentletQuery;
 @SuppressWarnings("deprecation")
 public class PortletDAO {
 
-	private FolderDAO folderDAO;
+	private final FolderDAO folderDAO;
+	private final User user;
 
-	public PortletDAO() {
+	public PortletDAO(User user) {
 		super();
 		this.folderDAO = new FolderDAO();
+		this.user = user;
 	}
 
 	public Map<Type, Collection<? extends Object>> getAllByBuffer(BufferedSearchResultIterator buff) {
@@ -48,27 +48,33 @@ public class PortletDAO {
 
 	public List<Container> getAllContainers(Host host) {
 		try {
-			return new ArrayList<>(APILocator.getContainerAPI().findContainersUnder(host));
-		} catch (DotDataException e) {
+			return new ArrayList<>(APILocator.getContainerAPI().findContainers(user, false, null, host.getHostThumbnail(), null, null, null, 0, 0, ""));
+		} catch (DotDataException | DotSecurityException e) {
 			Logger.warn(this, "Error while getting all containers", e);
 		}
 
-		return new ArrayList<Container>();
+		return new ArrayList<>();
 	}
 
 	public List<Template> getAllTemplates(Host host) {
 		try {
-			return APILocator.getTemplateAPI().findTemplatesAssignedTo(host);
-		} catch (DotDataException e) {
+			return APILocator.getTemplateAPI().findTemplates(user, false, null, host.getIdentifier(), null, null, null, 0, 0, "");
+		} catch (DotDataException | DotSecurityException e) {
 			Logger.warn(this, "Error while getting all templates", e);
 		}
 
-		return new ArrayList<Template>();
+		return new ArrayList<>();
 	}
 
 	public List<Structure> getAllStructures(Host host) {
-		return StructureFactory.getStructures().stream().filter(s -> s.getHost().equals(host.getIdentifier()))
-				.collect(Collectors.toList());
+		try {
+			return StructureFactory.getStructures(user, true, true, " host = '" + host.getIdentifier() + "'", "", 0, 0, "").stream().filter(s -> s.getHost().equals(host.getIdentifier()))
+					.collect(Collectors.toList());
+		} catch (DotDataException e) {
+			Logger.warn(this, "Error while getting all structures", e);
+		}
+
+		return new ArrayList<>();
 	}
 
 	public List<Contentlet> getWidgetContentlets(Host host, String languageId, Status status) {
@@ -87,25 +93,8 @@ public class PortletDAO {
 		return getContentletsByStructureType(Structure.STRUCTURE_TYPE_HTMLPAGE, host, languageId, status);
 	}
 
-	public List<HTMLPage> getAllHTMLPages(Host host) {
-		List<HTMLPage> htmlPages = new ArrayList<HTMLPage>();
-
-		List<Folder> folders = this.folderDAO.getAllFolders(host);
-
-		// Get HTML pages per folder
-		folders.forEach((folder -> {
-			try {
-				htmlPages.addAll(APILocator.getHTMLPageAPI().findLiveHTMLPages(folder));
-			} catch (DotStateException | DotDataException | DotSecurityException e) {
-				Logger.warn(this, "Error while finding live HTML pages in folder: " + folder.getName(), e);
-			}
-		}));
-
-		return htmlPages;
-	}
-
 	private List<Structure> getStructuresPerType(int structureType) {
-		List<Structure> structuresPerType = new ArrayList<Structure>();
+		List<Structure> structuresPerType = new ArrayList<>();
 
 		StructureFactory.getStructures().forEach((structure) -> {
 			if (structure.getStructureType() == structureType) {
@@ -122,6 +111,7 @@ public class PortletDAO {
 
 		if (structuresPerType.size() != 0) {
 			ContentletQuery cq = new ContentletQuery(structuresPerType);
+			cq.setUser(user);
 
 			if (structureType == Structure.STRUCTURE_TYPE_FILEASSET) {
 				cq.addHost(host.getIdentifier());
@@ -144,7 +134,7 @@ public class PortletDAO {
 			return cq.executeSafe();
 		}
 
-		return new ArrayList<Contentlet>();
+		return new ArrayList<>();
 	}
 
 }
