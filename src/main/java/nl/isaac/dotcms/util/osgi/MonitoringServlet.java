@@ -17,7 +17,15 @@ import com.dotcms.repackage.org.apache.commons.io.IOUtils;
 import com.dotmarketing.util.VelocityUtil;
 
 public class MonitoringServlet extends HttpServlet {
-	private static final String testMacro = "#macro(test $boolean)#if($boolean) OK\n#else NOK\n#end#end\n";
+	private static final String testMacro =
+			"#macro(test $boolean)#if($boolean) OK\n#else NOK\n#end#end\n";
+
+	// Use the pluginName to distinguish between MonitoringServlets of different plugins and avoid a "Servlet instance already registered"
+	private final String pluginName;
+
+	public MonitoringServlet(String pluginName) {
+		this.pluginName = pluginName;
+	}
 
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -28,27 +36,28 @@ public class MonitoringServlet extends HttpServlet {
 
 		try {
 			String result = VelocityUtil.eval(velocity, velocityContext);
-			if(result.contains("$") || result.contains("NOK")) {
+			if (result.contains("$") || result.contains("NOK")) {
 				response.setStatus(500);
 			}
 			response.getWriter().write(result);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-
 	}
 
-	private ChainedContext getStrictVelocityContext(HttpServletRequest request,	HttpServletResponse response) {
+	private ChainedContext getStrictVelocityContext(HttpServletRequest request,
+			HttpServletResponse response) {
 		ChainedContext velocityContext = VelocityUtil.getWebContext(request, response);
 		velocityContext.getVelocityEngine().setProperty(VelocityEngine.RUNTIME_REFERENCES_STRICT, true);
-		velocityContext.getVelocityEngine().setProperty(VelocityEngine.RUNTIME_REFERENCES_STRICT_ESCAPE, true);
+		velocityContext.getVelocityEngine()
+				.setProperty(VelocityEngine.RUNTIME_REFERENCES_STRICT_ESCAPE, true);
 		return velocityContext;
 	}
 
 	private String getMonitoringVelocity() throws IOException {
 		Bundle bundle = FrameworkUtil.getBundle(this.getClass());
 		URL resourceURL = bundle.getResource("ext/monitoring.vtl");
-		if(resourceURL != null) {
+		if (resourceURL != null) {
 			String velocity = IOUtils.toString(resourceURL.openStream(), "UTF-8");
 			return testMacro + velocity;
 		} else {
@@ -56,4 +65,19 @@ public class MonitoringServlet extends HttpServlet {
 		}
 	}
 
+	@Override public boolean equals(Object obj) {
+		if (obj instanceof MonitoringServlet) {
+			return super.equals(obj) && getPluginName().equals(((MonitoringServlet) obj).getPluginName());
+		}
+
+		return false;
+	}
+
+	@Override public int hashCode() {
+		return super.hashCode() + pluginName.hashCode();
+	}
+
+	public String getPluginName() {
+		return pluginName;
+	}
 }
