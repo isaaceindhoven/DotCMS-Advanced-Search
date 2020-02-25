@@ -1,6 +1,7 @@
 package nl.isaac.dotcms.util.osgi;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 
 import javax.servlet.ServletException;
@@ -58,8 +59,10 @@ public class MonitoringServlet extends HttpServlet {
 		Bundle bundle = FrameworkUtil.getBundle(this.getClass());
 		URL resourceURL = bundle.getResource("ext/monitoring.vtl");
 		if (resourceURL != null) {
-			String velocity = IOUtils.toString(resourceURL.openStream(), "UTF-8");
-			return testMacro + velocity;
+			try(InputStream is = resourceURL.openStream()) {
+				String velocity = IOUtils.toString(is, "UTF-8");
+				return testMacro + velocity;
+			}
 		} else {
 			return "/ext/monitoring.vtl does not exist";
 		}

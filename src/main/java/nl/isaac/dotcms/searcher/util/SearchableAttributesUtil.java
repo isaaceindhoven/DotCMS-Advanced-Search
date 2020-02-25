@@ -1,6 +1,7 @@
 package nl.isaac.dotcms.searcher.util;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -105,8 +106,9 @@ public final class SearchableAttributesUtil {
 
 				if (contentType.equals("text/plain")) {
 					String fileText = "";
-					try {
-						fileText = new String(IOUtils.toByteArray(file.getInputStream()));
+					try (InputStream is = file.getInputStream()){
+
+						fileText = new String(IOUtils.toByteArray(is));
 					} catch (IOException e) {
 						fileText = "";
 						Logger.warn(SearchableAttributesUtil.class, "Error while converting bytes to array of file: " + file.getFileName(), e);
